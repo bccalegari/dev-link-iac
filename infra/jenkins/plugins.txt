@@ -7,3 +7,5 @@ pipeline-stage-view
 kubernetes
 workflow-aggregator
 locale
+timestamper
+pipeline-graph-view

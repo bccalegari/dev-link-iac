@@ -1,3 +1,15 @@
+system:
+    domainCredentials:
+    - credentials:
+      - usernamePassword:
+          id: "devlink-registry"
+          password: "{AQAAABAAAAAQvVDHM+0zfjseaDEMlfdagvC8wdTt0VOU207CEiKDsEo=}"
+          scope: GLOBAL
+          username: "devlink"
+      - gitHubApp:
+          appID: "" # To be filled in with GitHub App ID
+          id: "devlink-github"
+          privateKey: "" # To be filled in with GitHub App Private Key
 jenkins:
   authorizationStrategy:
     loggedInUsersCanDoAnything:
@@ -68,14 +80,6 @@ jenkins:
               securityContext:
                 runAsUser: 0
                 privileged: true
-              command: ["sh", "-c", "cat"]
-              tty: true
-              volumeMounts:
-                - name: workspace
-                  mountPath: /home/jenkins/agent
-
-            - name: kubectl
-              image: bitnami/kubectl:latest
               command: ["sh", "-c", "cat"]
               tty: true
               volumeMounts:
