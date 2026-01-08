@@ -1,0 +1,9 @@
+ansicolor 
+blueocean
+configuration-as-code
+git
+github
+pipeline-stage-view
+kubernetes
+workflow-aggregator
+locale

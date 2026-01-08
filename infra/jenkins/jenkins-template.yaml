@@ -1,0 +1,184 @@
+jenkins:
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+  clouds:
+  - kubernetes:
+      containerCap: 10
+      containerCapStr: "10"
+      jenkinsUrl: "http://jenkins.devlink.svc.cluster.local:8080"
+      name: "devlink-k8s"
+      templates:
+      - agentInjection: true
+        id: "2fe50f6d-93ac-4d49-88a5-fcc3a4e05526"
+        name: "deploy-agent"
+        yaml: |
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            labels:
+              app: deploy-agent
+          spec:
+            serviceAccountName: jenkins-sa
+            imagePullSecrets:
+            - name: registry-cred
+
+            securityContext:
+              runAsUser: 1000
+              runAsGroup: 1000
+              fsGroup: 1000
+
+            volumes:
+            - name: workspace
+              emptyDir: {}
+
+            - name: m2-cache
+              ephemeral:
+                volumeClaimTemplate:
+                  spec:
+                    accessModes: ["ReadWriteOnce"]
+                    resources:
+                      requests:
+                        storage: 1Gi
+                    volumes:
+
+            containers:
+            - name: jnlp
+              image: jenkins/inbound-agent:3355.v388858a_47b_33-5
+              args: ['$(JENKINS_SECRET)', '$(JENKINS_NAME)']
+              volumeMounts:
+                - name: workspace
+                  mountPath: /home/jenkins/agent
+
+            - name: maven
+              image: maven:3.9.6-eclipse-temurin-21
+              env:
+                - name: HOME
+                  value: /home/jenkins
+              command: ["sh", "-c", "cat"]
+              tty: true
+              volumeMounts:
+                - name: workspace
+                  mountPath: /home/jenkins/agent
+                - name: m2-cache
+                  mountPath: /home/jenkins/.m2
+
+            - name: buildah
+              image: quay.io/buildah/stable:v1.42.2
+              securityContext:
+                runAsUser: 0
+                privileged: true
+              command: ["sh", "-c", "cat"]
+              tty: true
+              volumeMounts:
+                - name: workspace
+                  mountPath: /home/jenkins/agent
+
+            - name: kubectl
+              image: bitnami/kubectl:latest
+              command: ["sh", "-c", "cat"]
+              tty: true
+              volumeMounts:
+                - name: workspace
+                  mountPath: /home/jenkins/agent
+
+            - name: terraform-k8s
+              image: localhost:32000/terraform-k8s:latest
+              command: ["sh", "-c", "cat"]
+              tty: true
+              volumeMounts:
+                - name: workspace
+                  mountPath: /home/jenkins/agent
+        yamlMergeStrategy: "override"
+        yamls:
+        - |
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            labels:
+              app: deploy-agent
+          spec:
+            serviceAccountName: jenkins-sa
+            imagePullSecrets:
+            - name: registry-cred
+
+            securityContext:
+              runAsUser: 1000
+              runAsGroup: 1000
+              fsGroup: 1000
+
+            volumes:
+            - name: workspace
+              emptyDir: {}
+
+            - name: m2-cache
+              ephemeral:
+                volumeClaimTemplate:
+                  spec:
+                    accessModes: ["ReadWriteOnce"]
+                    resources:
+                      requests:
+                        storage: 1Gi
+                    volumes:
+
+            containers:
+            - name: jnlp
+              image: jenkins/inbound-agent:3355.v388858a_47b_33-5
+              args: ['$(JENKINS_SECRET)', '$(JENKINS_NAME)']
+              volumeMounts:
+                - name: workspace
+                  mountPath: /home/jenkins/agent
+
+            - name: maven
+              image: maven:3.9.6-eclipse-temurin-21
+              env:
+                - name: HOME
+                  value: /home/jenkins
+              command: ["sh", "-c", "cat"]
+              tty: true
+              volumeMounts:
+                - name: workspace
+                  mountPath: /home/jenkins/agent
+                - name: m2-cache
+                  mountPath: /home/jenkins/.m2
+
+            - name: buildah
+              image: quay.io/buildah/stable:v1.42.2
+              securityContext:
+                runAsUser: 0
+                privileged: true
+              command: ["sh", "-c", "cat"]
+              tty: true
+              volumeMounts:
+                - name: workspace
+                  mountPath: /home/jenkins/agent
+
+            - name: kubectl
+              image: bitnami/kubectl:latest
+              command: ["sh", "-c", "cat"]
+              tty: true
+              volumeMounts:
+                - name: workspace
+                  mountPath: /home/jenkins/agent
+
+            - name: terraform-k8s
+              image: localhost:32000/terraform-k8s:latest
+              command: ["sh", "-c", "cat"]
+              tty: true
+              volumeMounts:
+                - name: workspace
+                  mountPath: /home/jenkins/agent
+  crumbIssuer:
+    standard:
+      excludeClientIPFromCrumb: false
+  mode: NORMAL
+  numExecutors: 2
+  securityRealm:
+    local:
+      allowsSignup: false
+      enableCaptcha: false
+      users:
+      - id: "${JENKINS_USER}"
+        name: "${JENKINS_USER}"
+        password: "${JENKINS_PASS}"
+  slaveAgentPort: 50000
