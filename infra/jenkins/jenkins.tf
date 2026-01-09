@@ -55,6 +55,12 @@ resource "kubernetes_role" "jenkins" {
     resources  = ["secrets"]
     verbs      = ["get", "list", "watch"]
   }
+
+  rule {
+    api_groups = ["coordination.k8s.io"]
+    resources  = ["leases"]
+    verbs      = ["get", "list", "watch", "create", "update", "patch", "delete"]
+  }
 }
 
 ########################################
