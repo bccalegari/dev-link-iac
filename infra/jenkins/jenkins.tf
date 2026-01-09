@@ -53,7 +53,7 @@ resource "kubernetes_role" "jenkins" {
   rule {
     api_groups = [""]
     resources  = ["secrets"]
-    verbs      = ["get", "list", "watch"]
+    verbs      = ["get", "list", "watch", "create", "update", "patch", "delete"]
   }
 
   rule {
