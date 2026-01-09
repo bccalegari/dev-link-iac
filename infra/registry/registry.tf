@@ -57,6 +57,28 @@ resource "kubernetes_secret" "registry_cred" {
   }
 }
 
+locals {
+  auth = jsondecode(data.external.registry_secrets.result.basic_auth)
+}
+
+
+########################################
+# Registry Basic Auth Credentials
+########################################
+resource "kubernetes_secret" "registry_basic_auth" {
+  metadata {
+    name      = "registry-basic-auth"
+    namespace = "devlink"
+  }
+
+  type = "Opaque"
+
+  data = {
+    username = local.auth.username
+    password = local.auth.password
+  }
+}
+
 ########################################
 # Deployment
 ########################################

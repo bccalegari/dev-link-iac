@@ -1,4 +1,4 @@
-FROM hashicorp/terraform:1.14
+FROM docker.io/hashicorp/terraform:1.14
 
 ARG KUBECTL_VERSION="1.35.0"
 

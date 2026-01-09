@@ -56,13 +56,20 @@ DOCKERCONFIGJSON=$(jq -n \
     }
   }' | jq -c .)
 
+BASIC_AUTH=$(jq -n \
+  --arg user "$REGISTRY_USER" \
+  --arg pass "$REGISTRY_PASS" \
+  '{ username: $user, password: $pass }' | jq -c .)
+
 # ----------------------
 # Combine htpasswd and Docker config JSON into final JSON
 # ----------------------
 jq -n \
   --arg htpasswd "$REGISTRY_HTPASSWD" \
   --arg dockerconfigjson "$DOCKERCONFIGJSON" \
+  --arg basic_auth "$BASIC_AUTH" \
   '{
     htpasswd: $htpasswd,
-    dockerconfigjson: $dockerconfigjson
+    dockerconfigjson: $dockerconfigjson,
+    basic_auth: $basic_auth
   }'

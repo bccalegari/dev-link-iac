@@ -4,8 +4,6 @@ set -euo pipefail
 # ----------------------
 # Configuration
 # ----------------------
-TEMPLATE_FILE="$SCRIPT_DIR/jenkins-template.yaml"
-OUTPUT_FILE="$SCRIPT_DIR/jenkins.yaml"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="$SCRIPT_DIR/../../.env"
 
@@ -33,13 +31,13 @@ for var in JENKINS_USER JENKINS_PASS; do
 done
 
 # ----------------------
-# Replace placeholders in Jenkins YAML template
+# Generate Jenkins credentials JSON using jq
 # ----------------------
-if [ ! -f "$TEMPLATE_FILE" ]; then
-  echo "Jenkins template file not found at $TEMPLATE_FILE"
-  exit 1
-fi
 
-envsubst < "$TEMPLATE_FILE" > "$OUTPUT_FILE"
-
-echo "Jenkins YAML file created at $OUTPUT_FILE"
+jq -n \
+  --arg username "$JENKINS_USER" \
+  --arg password "$JENKINS_PASS" \
+  '{
+    username: $username,
+    password: $password
+  }'

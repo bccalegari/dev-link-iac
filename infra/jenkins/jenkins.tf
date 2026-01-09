@@ -106,6 +106,30 @@ resource "kubernetes_persistent_volume_claim" "jenkins" {
 }
 
 ########################################
+# External data
+########################################
+data "external" "jenkins_secrets" {
+  program = ["bash", "${path.module}/generate_jenkins_secrets.sh"]
+}
+
+########################################
+# Jenkins Basic Auth Credentials
+########################################
+resource "kubernetes_secret" "jenkins_basic_auth" {
+  metadata {
+    name      = "jenkins-basic-auth"
+    namespace = "devlink"
+  }
+
+  type = "Opaque"
+
+  data = {
+    username = data.external.jenkins_secrets.result.username
+    password = data.external.jenkins_secrets.result.password
+  }
+}
+
+########################################
 # Deployment
 ########################################
 resource "kubernetes_deployment" "jenkins" {
@@ -140,11 +164,15 @@ resource "kubernetes_deployment" "jenkins" {
         init_container {
           name  = "wait-for-image"
           image = "curlimages/curl:7.88.1"
+          env_from {
+            secret_ref {
+              name = "registry-basic-auth"
+            }
+          }
           command = [
             "sh",
             "-c",
-            "echo 'Waiting for devlink-jenkins image...'; until curl -u devlink:devlink123 -s http://registry.devlink.svc.cluster.local:5000/v2/devlink-jenkins/tags/list | grep latest >/dev/null 2>&1; do echo 'Image not ready yet, sleeping 5s...'; sleep 5; done; echo 'Image found, continuing...'"
-            #TODO Use secrets for credentials
+            "echo 'Waiting for devlink-jenkins image...'; until curl -u $username:$password -s http://registry.devlink.svc.cluster.local:5000/v2/devlink-jenkins/tags/list | grep latest >/dev/null 2>&1; do echo 'Image not ready yet, sleeping 5s...'; sleep 5; done; echo 'Image found, continuing...'"
           ]
         }
 
@@ -159,6 +187,46 @@ resource "kubernetes_deployment" "jenkins" {
           volume_mount {
             name       = "jenkins-home"
             mount_path = "/var/jenkins_home"
+          }
+
+          env {
+            name = "REGISTRY_USER"
+            value_from {
+              secret_key_ref {
+                name = "registry-basic-auth"
+                key  = "username"
+              }
+            }
+          }
+
+          env {
+            name = "REGISTRY_PASS"
+            value_from {
+              secret_key_ref {
+                name = "registry-basic-auth"
+                key  = "password"
+              }
+            }
+          }
+
+          env {
+            name  = "JENKINS_USER"
+            value_from {
+              secret_key_ref {
+                name = "jenkins-basic-auth"
+                key  = "username"
+              }
+            }
+          }
+
+          env {
+            name  = "JENKINS_PASS"
+            value_from {
+              secret_key_ref {
+                name = "jenkins-basic-auth"
+                key  = "password"
+              }
+            }
           }
         }
 

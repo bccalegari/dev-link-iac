@@ -41,6 +41,3 @@ terraform.rc
 
 # Ignore environment variable files
 .env
-
-# Ignore Jenkins configuration files, which may contain sensitive information (Use create-jenkins-yaml.sh to generate the Jenkins configuration)
-**/jenkins.yaml

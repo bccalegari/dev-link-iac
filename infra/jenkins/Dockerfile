@@ -1,4 +1,4 @@
-FROM jenkins/jenkins:2.528.3-lts-jdk21
+FROM docker.io/jenkins/jenkins:2.528.3-lts-jdk21
 
 COPY jenkins.yaml /usr/share/jenkins/ref/jenkins.yaml
 COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
