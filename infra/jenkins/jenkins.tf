@@ -49,6 +49,12 @@ resource "kubernetes_role" "jenkins" {
     resources  = ["ingresses"]
     verbs      = ["get", "list", "watch", "create", "update", "patch", "delete"]
   }
+
+  rule {
+    api_groups = [""]
+    resources  = ["secrets"]
+    verbs      = ["get", "list", "watch"]
+  }
 }
 
 ########################################
@@ -132,6 +138,7 @@ resource "kubernetes_deployment" "jenkins" {
             "sh",
             "-c",
             "echo 'Waiting for devlink-jenkins image...'; until curl -u devlink:devlink123 -s http://registry.devlink.svc.cluster.local:5000/v2/devlink-jenkins/tags/list | grep latest >/dev/null 2>&1; do echo 'Image not ready yet, sleeping 5s...'; sleep 5; done; echo 'Image found, continuing...'"
+            #TODO Use secrets for credentials
           ]
         }
 

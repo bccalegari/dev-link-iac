@@ -145,14 +145,6 @@ jenkins:
                 - name: workspace
                   mountPath: /home/jenkins/agent
 
-            - name: kubectl
-              image: bitnami/kubectl:latest
-              command: ["sh", "-c", "cat"]
-              tty: true
-              volumeMounts:
-                - name: workspace
-                  mountPath: /home/jenkins/agent
-
             - name: terraform-k8s
               image: localhost:32000/terraform-k8s:latest
               command: ["sh", "-c", "cat"]
@@ -175,6 +167,12 @@ jenkins:
         password: "${JENKINS_PASS}"
   slaveAgentPort: 50000
   systemMessage: "Jenkins for DevLink Project"
+  appearance:
+    pipelineGraphView:
+      showGraphOnBuildPage: true
+      showGraphOnJobPage: true
+      showStageDurations: true
+      showStageNames: true
 
 credentials:
   system:
@@ -182,6 +180,6 @@ credentials:
       - credentials:
         - usernamePassword:
             id: "devlink-registry"
-            password: "{AQAAABAAAAAQvVDHM+0zfjseaDEMlfdagvC8wdTt0VOU207CEiKDsEo=}"
+            password: "${REGISTRY_PASS}"
             scope: GLOBAL
             username: "devlink"
