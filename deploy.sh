@@ -20,8 +20,24 @@ else
   kubectl rollout status deployment -n ingress-nginx -l app.kubernetes.io/component=controller
 fi
 
+# ----------------------
+# Deploy Terraform Resources
+# ----------------------
+echo "Deploying Terraform Resources..."
+terraform init
+terraform plan
+
 if [ "$PUSH_IMAGES" = "true" ]; then
+    terraform apply -auto-approve &
+    echo "Terraform apply started in background with PID $!"
+    TF_PID=$!
+
     echo "PUSH_IMAGES is true, proceeding to push custom images..."
+
+    until kubectl get namespace $NAMESPACE >/dev/null 2>&1; do
+        echo "Waiting for namespace $NAMESPACE to be created..."
+        sleep 5
+    done
 
     # ----------------------
     # Configuration
@@ -52,14 +68,6 @@ if [ "$PUSH_IMAGES" = "true" ]; then
     fi
     done
 
-    # ----------------------
-    # Deploy Terraform Registry
-    # ----------------------
-    echo "Deploying Terraform Registry..."
-    terraform init
-    terraform plan -target=module.registry
-    terraform apply -target=module.registry -auto-approve
-
     echo "Waiting for Registry deployment to be ready..."
     kubectl rollout status deployment/registry -n $NAMESPACE
     kubectl wait --for=condition=available deployment/registry -n $NAMESPACE --timeout=120s
@@ -73,30 +81,21 @@ if [ "$PUSH_IMAGES" = "true" ]; then
         echo "terraform-k8s already exists in registry"
     fi
 
+    cd "$SCRIPT_DIR"
+
     if ! curl -u $REGISTRY_USER:$REGISTRY_PASS -s http://$REGISTRY_URL/v2/devlink-jenkins/tags/list | grep latest >/dev/null; then
         echo "Pushing devlink-jenkins image..."
-        cd ./jenkins && ./build-and-push-custom-jenkins-image.sh
+        cd ./infra/jenkins && ./build-and-push-custom-jenkins-image.sh
     else
         echo "devlink-jenkins already exists in registry"
     fi
 
     echo "Custom images pushed successfully."
 
-    # ----------------------
-    # Deploy Jenkins
-    # ----------------------
-    echo "Deploying Jenkins..."
-    terraform plan -target=module.jenkins
-    terraform apply -target=module.jenkins -auto-approve
+    wait $TF_PID
+    wait
 else
-    echo "Skipping image push because PUSH_IMAGES is not true."
-
-    # ----------------------
-    # Deploy Terraform Resources
-    # ----------------------
-    echo "Deploying Terraform Resources..."
-    terraform init
-    terraform plan
+    echo "PUSH_IMAGES is false, skipping image push..."
     terraform apply -auto-approve
 fi
 

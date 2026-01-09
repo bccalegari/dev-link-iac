@@ -119,11 +119,21 @@ resource "kubernetes_deployment" "jenkins" {
       }
 
       spec {
+        service_account_name = kubernetes_service_account.jenkins.metadata[0].name
+
         image_pull_secrets {
           name = "registry-cred"
         }
-        
-        service_account_name = kubernetes_service_account.jenkins.metadata[0].name
+
+        init_container {
+          name  = "wait-for-image"
+          image = "curlimages/curl:7.88.1"
+          command = [
+            "sh",
+            "-c",
+            "echo 'Waiting for devlink-jenkins image...'; until curl -u devlink:devlink123 -s http://registry.devlink.svc.cluster.local:5000/v2/devlink-jenkins/tags/list | grep latest >/dev/null 2>&1; do echo 'Image not ready yet, sleeping 5s...'; sleep 5; done; echo 'Image found, continuing...'"
+          ]
+        }
 
         container {
           name  = "jenkins"
