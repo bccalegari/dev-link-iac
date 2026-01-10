@@ -1,0 +1,130 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      dry_run:
+        description: 'Dry run (no commit, no tag)'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get last tag
+        id: last
+        run: |
+          TAG=$(git tag --sort=-v:refname | head -n 1)
+          [ -z "$TAG" ] && TAG="v0.0.0"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Calculate next version
+        id: version
+        run: |
+          TAG="${{ steps.last.outputs.tag }}"
+          TAG="${TAG#v}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$TAG"
+
+          case "${{ github.event.inputs.bump }}" in
+            major)
+              MAJOR=$((MAJOR+1)); MINOR=0; PATCH=0 ;;
+            minor)
+              MINOR=$((MINOR+1)); PATCH=0 ;;
+            patch)
+              PATCH=$((PATCH+1)) ;;
+          esac
+
+          VERSION="v$MAJOR.$MINOR.$PATCH"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Dry-run summary
+        if: github.event.inputs.dry_run == 'true'
+        run: |
+          echo "DRY RUN"
+          echo "Bump type: ${{ github.event.inputs.bump }}"
+          echo "Next version: ${{ steps.version.outputs.version }}"
+          echo ""
+          echo "Changelog:"
+          LAST_TAG="${{ steps.last.outputs.tag }}"
+          if [ "$LAST_TAG" = "v0.0.0" ]; then
+            git log --pretty=format:"- %h %B"
+          else
+            git log "$LAST_TAG"..HEAD --pretty=format:"- %h %B"
+          fi
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          LAST_TAG="${{ steps.last.outputs.tag }}"
+          if [ "$LAST_TAG" = "v0.0.0" ]; then
+            LOG=$(git log --pretty=format:"- %h %B")
+          else
+            LOG=$(git log "$LAST_TAG"..HEAD --pretty=format:"- %h %B")
+          fi
+          echo "$LOG"
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$LOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Update VERSION file
+        if: github.event.inputs.dry_run == 'false'
+        run: |
+          echo "${{ steps.version.outputs.version }}" > VERSION
+
+      - name: Commit release
+        if: github.event.inputs.dry_run == 'false'
+        run: |
+          git config user.name  "github-actions"
+          git config user.email "actions@github.com"
+          git add VERSION
+          git commit -m "chore(release): ${{ steps.version.outputs.version }}"
+          git push
+
+      - name: Create tag
+        if: github.event.inputs.dry_run == 'false'
+        run: |
+          git tag ${{ steps.version.outputs.version }}
+          git push origin ${{ steps.version.outputs.version }}
+
+      - name: Create GitHub Release
+        if: github.event.inputs.dry_run == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: Release ${{ steps.version.outputs.version }}
+          body: ${{ steps.changelog.outputs.changelog }}
+
+      - name: Notify monorepo to update submodule
+        if: github.event.inputs.dry_run == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.MONOREPO_TOKEN }}
+        run: |
+          echo '{
+            "event_type": "update-iac",
+            "client_payload": {
+              "version": "${{ steps.version.outputs.version }}"
+            }
+          }' > dispatch.json
+          gh api repos/bccalegari/dev-link-monorepo/dispatches \
+            -X POST \
+            --input dispatch.json
