@@ -41,7 +41,7 @@ variable "color" {
 ########################################
 # Deployment
 ########################################
-resource "kubernetes_deployment" "user_service" {
+resource "kubernetes_deployment_v1" "user_service" {
   metadata {
     name      = "user-service-${var.color}"
     namespace = "devlink"

@@ -82,7 +82,7 @@ resource "kubernetes_secret" "registry_basic_auth" {
 ########################################
 # Deployment
 ########################################
-resource "kubernetes_deployment" "registry" {
+resource "kubernetes_deployment_v1" "registry" {
   metadata {
     name      = "registry"
     namespace = "devlink"

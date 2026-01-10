@@ -132,7 +132,7 @@ resource "kubernetes_secret" "jenkins_basic_auth" {
 ########################################
 # Deployment
 ########################################
-resource "kubernetes_deployment" "jenkins" {
+resource "kubernetes_deployment_v1" "jenkins" {
   metadata {
     name      = "jenkins"
     namespace = "devlink"
