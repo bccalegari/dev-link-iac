@@ -80,6 +80,14 @@ jenkins:
               volumeMounts:
                 - name: workspace
                   mountPath: /home/jenkins/agent
+
+            - name: gh
+              image: maniator/gh:v2.83.2
+              command: ["sh", "-c", "cat"]
+              tty: true
+              volumeMounts:
+                - name: workspace
+                  mountPath: /home/jenkins/agent
   crumbIssuer:
     standard:
       excludeClientIPFromCrumb: false
