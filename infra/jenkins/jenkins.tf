@@ -1,7 +1,7 @@
 ########################################
 # ServiceAccount
 ########################################
-resource "kubernetes_service_account" "jenkins" {
+resource "kubernetes_service_account_v1" "jenkins" {
   metadata {
     name      = "jenkins-sa"
     namespace = "devlink"
@@ -11,12 +11,12 @@ resource "kubernetes_service_account" "jenkins" {
 ########################################
 # ServiceAccount Token
 ########################################
-resource "kubernetes_secret" "jenkins_sa_token" {
+resource "kubernetes_secret_v1" "jenkins_sa_token" {
   metadata {
-    name      = "${kubernetes_service_account.jenkins.metadata[0].name}-token"
+    name      = "${kubernetes_service_account_v1.jenkins.metadata[0].name}-token"
     namespace = "devlink"
     annotations = {
-      "kubernetes.io/service-account.name" = kubernetes_service_account.jenkins.metadata[0].name
+      "kubernetes.io/service-account.name" = kubernetes_service_account_v1.jenkins.metadata[0].name
     }
   }
 
@@ -26,7 +26,7 @@ resource "kubernetes_secret" "jenkins_sa_token" {
 ########################################
 # Role
 ########################################
-resource "kubernetes_role" "jenkins" {
+resource "kubernetes_role_v1" "jenkins" {
   metadata {
     name      = "jenkins-deploy-role"
     namespace = "devlink"
@@ -66,7 +66,7 @@ resource "kubernetes_role" "jenkins" {
 ########################################
 # RoleBinding
 ########################################
-resource "kubernetes_role_binding" "jenkins" {
+resource "kubernetes_role_binding_v1" "jenkins" {
   metadata {
     name      = "jenkins-deploy-binding"
     namespace = "devlink"
@@ -75,12 +75,12 @@ resource "kubernetes_role_binding" "jenkins" {
   role_ref {
     api_group = "rbac.authorization.k8s.io"
     kind      = "Role"
-    name      = kubernetes_role.jenkins.metadata[0].name
+    name      = kubernetes_role_v1.jenkins.metadata[0].name
   }
 
   subject {
     kind      = "ServiceAccount"
-    name      = kubernetes_service_account.jenkins.metadata[0].name
+    name      = kubernetes_service_account_v1.jenkins.metadata[0].name
     namespace = "devlink"
   }
 }
@@ -88,7 +88,7 @@ resource "kubernetes_role_binding" "jenkins" {
 ########################################
 # PersistentVolumeClaim
 ########################################
-resource "kubernetes_persistent_volume_claim" "jenkins" {
+resource "kubernetes_persistent_volume_claim_v1" "jenkins" {
   metadata {
     name      = "jenkins-pvc"
     namespace = "devlink"
@@ -115,7 +115,7 @@ data "external" "jenkins_secrets" {
 ########################################
 # Jenkins Basic Auth Credentials
 ########################################
-resource "kubernetes_secret" "jenkins_basic_auth" {
+resource "kubernetes_secret_v1" "jenkins_basic_auth" {
   metadata {
     name      = "jenkins-basic-auth"
     namespace = "devlink"
@@ -155,7 +155,7 @@ resource "kubernetes_deployment_v1" "jenkins" {
       }
 
       spec {
-        service_account_name = kubernetes_service_account.jenkins.metadata[0].name
+        service_account_name = kubernetes_service_account_v1.jenkins.metadata[0].name
 
         image_pull_secrets {
           name = "registry-cred"
@@ -234,7 +234,7 @@ resource "kubernetes_deployment_v1" "jenkins" {
           name = "jenkins-home"
 
           persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim.jenkins.metadata[0].name
+            claim_name = kubernetes_persistent_volume_claim_v1.jenkins.metadata[0].name
           }
         }
       }
@@ -245,7 +245,7 @@ resource "kubernetes_deployment_v1" "jenkins" {
 ########################################
 # Service
 ########################################
-resource "kubernetes_service" "jenkins" {
+resource "kubernetes_service_v1" "jenkins" {
   metadata {
     name      = "jenkins"
     namespace = "devlink"
@@ -297,7 +297,7 @@ resource "kubernetes_ingress_v1" "jenkins" {
 
           backend {
             service {
-              name = kubernetes_service.jenkins.metadata[0].name
+              name = kubernetes_service_v1.jenkins.metadata[0].name
               port {
                 number = 8080
               }

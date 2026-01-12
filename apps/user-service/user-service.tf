@@ -105,7 +105,7 @@ resource "kubernetes_deployment_v1" "user_service" {
 ########################################
 # Service
 ########################################
-resource "kubernetes_service" "user_service" {
+resource "kubernetes_service_v1" "user_service" {
   metadata {
     name      = "user-service"
     namespace = "devlink"

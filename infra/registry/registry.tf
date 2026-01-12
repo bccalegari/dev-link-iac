@@ -1,7 +1,7 @@
 ########################################
 # PersistentVolumeClaim
 ########################################
-resource "kubernetes_persistent_volume_claim" "registry" {
+resource "kubernetes_persistent_volume_claim_v1" "registry" {
   metadata {
     name      = "registry-pvc"
     namespace = "devlink"
@@ -28,7 +28,7 @@ data "external" "registry_secrets" {
 ########################################
 # Registry Auth Secret
 ########################################
-resource "kubernetes_secret" "registry_auth" {
+resource "kubernetes_secret_v1" "registry_auth" {
   metadata {
     name      = "registry-auth-secret"
     namespace = "devlink"
@@ -44,7 +44,7 @@ resource "kubernetes_secret" "registry_auth" {
 ########################################
 # Registry Docker Credentials
 ########################################
-resource "kubernetes_secret" "registry_cred" {
+resource "kubernetes_secret_v1" "registry_cred" {
   metadata {
     name      = "registry-cred"
     namespace = "devlink"
@@ -65,7 +65,7 @@ locals {
 ########################################
 # Registry Basic Auth Credentials
 ########################################
-resource "kubernetes_secret" "registry_basic_auth" {
+resource "kubernetes_secret_v1" "registry_basic_auth" {
   metadata {
     name      = "registry-basic-auth"
     namespace = "devlink"
@@ -143,7 +143,7 @@ resource "kubernetes_deployment_v1" "registry" {
           name = "registry-storage"
 
           persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim.registry.metadata[0].name
+            claim_name = kubernetes_persistent_volume_claim_v1.registry.metadata[0].name
           }
         }
 
@@ -151,7 +151,7 @@ resource "kubernetes_deployment_v1" "registry" {
           name = "registry-auth"
 
           secret {
-            secret_name = kubernetes_secret.registry_auth.metadata[0].name
+            secret_name = kubernetes_secret_v1.registry_auth.metadata[0].name
           }
         }
       }
@@ -162,7 +162,7 @@ resource "kubernetes_deployment_v1" "registry" {
 ########################################
 # Service
 ########################################
-resource "kubernetes_service" "registry" {
+resource "kubernetes_service_v1" "registry" {
   metadata {
     name      = "registry"
     namespace = "devlink"
